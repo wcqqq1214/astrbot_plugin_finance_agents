@@ -141,7 +141,12 @@ def format_final_message(result: AnalysisResult, *, show_sources: bool = True) -
                 )
         for item in (social.get("posts") or [])[:3]:
             if isinstance(item, dict) and item.get("url"):
-                sources_lines.append(f"· X: {item.get('title', '')} {item.get('url')}")
+                author = item.get("author")
+                via = f"（@{author}）" if author else ""
+                sources_lines.append(
+                    f"· X（情绪参考·未经核实）: {item.get('title', '')} "
+                    f"{item.get('url')}{via}"
+                )
         if sources_lines:
             lines.extend(["", "【数据来源】", *sources_lines])
 

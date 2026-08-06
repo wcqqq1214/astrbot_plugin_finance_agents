@@ -44,6 +44,12 @@ def _bias(value: Any, default: str = "neutral") -> str:
     return value if value in BIAS_VALUES else default
 
 
+def _detect_lang(text: str) -> str:
+    """Return 'Chinese' when the query contains CJK characters, else 'English'."""
+
+    return "Chinese" if any("一" <= ch <= "鿿" for ch in text) else "English"
+
+
 # --- deterministic fallbacks (used when the LLM output cannot be parsed) ---
 
 
@@ -78,7 +84,7 @@ def _fallback_summary(trend: str, indicators: dict[str, Any]) -> str:
 
 
 async def quant_agent(
-    llm: LLMAdapter, ticker: str, candidates: list[str]
+    llm: LLMAdapter, ticker: str, candidates: list[str], *, lang: str
 ) -> QuantReport:
     indicators = await market_tool.fetch_first_available(candidates)
     if "error" in indicators:
@@ -93,7 +99,7 @@ async def quant_agent(
         f"Asset: {ticker}\n\nTechnical indicators snapshot (JSON):\n"
         f"{json.dumps(indicators, ensure_ascii=False)}"
     )
-    text = await llm.chat(prompts.QUANT_SYSTEM, user_content)
+    text = await llm.chat(prompts.quant_system(lang), user_content)
     try:
         obj = extract_json_object(text)
     except ValueError:
@@ -122,6 +128,7 @@ async def news_agent(
     query: str,
     days: int,
     max_results: int,
+    lang: str,
 ) -> NewsReport:
     articles = await news_tool.search_news(
         api_key, query, days=days, max_results=max_results
@@ -137,7 +144,7 @@ async def news_agent(
         f"Asset: {ticker}\n\nRecent news items (JSON):\n"
         f"{json.dumps(articles, ensure_ascii=False)}"
     )
-    text = await llm.chat(prompts.NEWS_SYSTEM, user_content)
+    text = await llm.chat(prompts.news_system(lang), user_content)
     try:
         obj = extract_json_object(text)
     except ValueError:
@@ -165,6 +172,8 @@ async def social_agent(
     query: str,
     max_results: int,
     days_back: int,
+    lang: str,
+    min_posts: int,
 ) -> SocialReport:
     posts = await x_tool.search_x_posts(
         api_key, query, max_results=max_results, days_back=days_back
@@ -182,12 +191,14 @@ async def social_agent(
         f"Asset: {ticker}\n\nRecent X posts (JSON):\n"
         f"{json.dumps(posts, ensure_ascii=False)}"
     )
-    text = await llm.chat(prompts.SOCIAL_SYSTEM, user_content)
+    text = await llm.chat(prompts.social_system(lang, min_posts), user_content)
     try:
         obj = extract_json_object(text)
     except ValueError:
         obj = {}
     signal_available = bool(obj.get("signal_available", True))
+    if len(posts) < min_posts:
+        signal_available = False
     summary = _str(obj.get("summary"))
     if not summary:
         summary = (
@@ -221,7 +232,7 @@ async def cio_agent(
             format_social_block(social),
         ]
     )
-    text = await llm.chat(prompts.CIO_SYSTEM, block)
+    text = await llm.chat(prompts.cio_system(), block)
     try:
         obj = extract_json_object(text)
     except ValueError:
@@ -254,12 +265,14 @@ async def run_analysis(
     spec = resolve_ticker(ticker_raw, config)
     ticker = spec.display
     llm = create_llm(context, umo)
+    lang = _detect_lang(query)
     api_key = _str(config.get("tavily_api_key")) or None
     timeout = int(config.get("agent_timeout", 90) or 90)
     news_days = int(config.get("news_days", 7) or 7)
     max_results = int(config.get("max_results", 8) or 8)
     x_search_enabled = bool(config.get("x_search_enabled", True))
     x_search_days = int(config.get("x_search_days", 7) or 7)
+    x_min_posts = int(config.get("x_min_posts", 3) or 3)
 
     async def _task(
         label: str,
@@ -293,7 +306,7 @@ async def run_analysis(
             "quant",
             "📊 量化技术面分析中…",
             "✅ 量化技术面分析完成",
-            quant_agent(llm, ticker, list(spec.candidates)),
+            quant_agent(llm, ticker, list(spec.candidates), lang=lang),
         )
     ]
     if api_key:
@@ -309,6 +322,7 @@ async def run_analysis(
                     query=spec.search_query,
                     days=news_days,
                     max_results=max_results,
+                    lang=lang,
                 ),
             )
         )
@@ -325,6 +339,8 @@ async def run_analysis(
                         query=spec.search_query,
                         max_results=max_results,
                         days_back=x_search_days,
+                        lang=lang,
+                        min_posts=x_min_posts,
                     ),
                 )
             )

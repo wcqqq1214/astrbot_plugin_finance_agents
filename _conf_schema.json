@@ -29,6 +29,12 @@
     "default": 7,
     "hint": "只采信近 N 天的 X 帖子，避免旧帖干扰"
   },
+  "x_min_posts": {
+    "description": "X 社交情绪判定所需的最低可用帖子数",
+    "type": "int",
+    "default": 3,
+    "hint": "近 N 天可用的帖子数低于该值，则 X 信号标记为不可用"
+  },
   "max_results": {
     "description": "每次检索最多返回的结果数",
     "type": "int",

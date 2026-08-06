@@ -13,6 +13,16 @@ from typing import Any
 from .tavily import tavily_search
 
 
+def _author_handle(url: str) -> str:
+    """Extract the account handle from an x.com/twitter.com status URL."""
+
+    parts = [part for part in url.split("/") if part]
+    for i, part in enumerate(parts):
+        if part in ("x.com", "twitter.com") and i + 1 < len(parts):
+            return parts[i + 1]
+    return ""
+
+
 async def search_x_posts(
     api_key: str,
     query: str,
@@ -34,7 +44,7 @@ async def search_x_posts(
     }
     results = await tavily_search(api_key, payload)
     posts = [
-        item
+        {**item, "author": _author_handle(item.get("url", ""))}
         for item in results
         if "x.com" in item.get("url", "") or "twitter.com" in item.get("url", "")
     ]
