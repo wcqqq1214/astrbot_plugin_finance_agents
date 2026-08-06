@@ -2,9 +2,9 @@
 
 AstrBot 多智能体金融分析插件。对一个标的并行运行三个研究智能体（量化技术面 / 宏观新闻情绪 / X 社交情绪），再由 CIO 智能体折叠多空论据、给出综合研判。
 
-支持**股票与加密货币**：行情来自 yfinance，新闻与 X 帖子来自 Tavily（复用 AstrBot 内置 web search 已配置的 key，无需额外配置）。
+支持**股票与加密货币**：行情来自 yfinance，新闻与 X 帖子来自 Tavily（需在插件配置中填写 Tavily API Key）。
 
-- 股票：`/analyze AAPL`、`/analyze NVDA` 等（美股 / 港股 / A 股等 yfinance 支持的代码）
+- 股票：`/analyze AAPL`、`/analyze NVDA` 等（yfinance 支持的代码均可）
 - 加密货币：`/analyze BTC`、`/analyze ETH` 等，直接输币种代码即可。插件自动补 `-USD` 锚定（`-USDT` 兜底）取行情，新闻与 X 检索使用币种全名（如 `Bitcoin BTC`）；常见币种（BTC/ETH/SOL/XRP/DOGE/ADA/BNB/AVAX/LTC/DOT/LINK）已内置，也可用 `crypto_name_map` 配置自定义映射。兼容输入 `BTC-USD`/`BTC-USDT`。
 
 > 股票代码需用 yfinance 可识别的格式；数据仅用于信息参考，不构成任何投资建议。
@@ -30,6 +30,7 @@ AstrBot 多智能体金融分析插件。对一个标的并行运行三个研究
 
 | 配置项 | 默认值 | 说明 |
 | --- | --- | --- |
+| `tavily_api_key` | （空） | Tavily API Key，用于新闻与 X 检索；留空则跳过这两路分析 |
 | `crypto_name_map` | `{}` | 加密货币代码 → 全称映射（dict），覆盖或扩展内置币种表，用于新闻/X 检索 |
 | `news_days` | 7 | 新闻检索回溯天数 |
 | `x_search_enabled` | true | 是否抓取 X 帖子 |

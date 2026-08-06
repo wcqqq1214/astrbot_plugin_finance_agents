@@ -1,4 +1,4 @@
-"""System prompts for the four agents, distilled from q-agents.
+"""System prompts for the four agents.
 
 The three research agents emit strict JSON for agent-to-agent consumption.
 The CIO emits a folded bull/bear/verdict JSON in a single call (the "2a"
