@@ -84,9 +84,13 @@ def _fallback_summary(trend: str, indicators: dict[str, Any]) -> str:
 
 
 async def quant_agent(
-    llm: LLMAdapter, ticker: str, candidates: list[str], *, lang: str
+    llm: LLMAdapter,
+    ticker: str,
+    indicators_coro: Awaitable[dict[str, Any]],
+    *,
+    lang: str,
 ) -> QuantReport:
-    indicators = await market_tool.fetch_first_available(candidates)
+    indicators = await indicators_coro
     if "error" in indicators:
         return {
             "asset": ticker,
@@ -305,12 +309,17 @@ async def run_analysis(
             await on_progress(label, "done", done_msg)
         return result
 
+    quant_fetch = (
+        market_tool.fetch_crypto_indicators(spec.display)
+        if spec.is_crypto
+        else market_tool.fetch_first_available(list(spec.candidates))
+    )
     tasks: list[Awaitable[Any]] = [
         _task(
             "quant",
             "📊 量化技术面分析中…",
             "✅ 量化技术面分析完成",
-            quant_agent(llm, ticker, list(spec.candidates), lang=lang),
+            quant_agent(llm, ticker, quant_fetch, lang=lang),
         )
     ]
     if api_key:
@@ -359,7 +368,10 @@ async def run_analysis(
                 "⚠️ 未配置 Tavily Key，跳过新闻与 X 分析（请在插件配置中填写 tavily_api_key）",
             )
 
-    quant, news, social = await asyncio.gather(*tasks)
+    results = await asyncio.gather(*tasks)
+    quant = results[0] if len(results) > 0 else None
+    news = results[1] if len(results) > 1 else None
+    social = results[2] if len(results) > 2 else None
 
     if quant is None:
         quant = {
