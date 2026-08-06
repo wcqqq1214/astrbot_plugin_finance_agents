@@ -1,4 +1,10 @@
 {
+  "crypto_name_map": {
+    "description": "加密货币代码 → 名称映射（用于新闻/X 检索）",
+    "type": "dict",
+    "default": {},
+    "hint": "键为币种代码（如 BTC），值为全称（如 Bitcoin）。留空使用内置常见币种表；填写的条目会覆盖或新增"
+  },
   "news_days": {
     "description": "新闻检索的时间窗口（天）",
     "type": "int",

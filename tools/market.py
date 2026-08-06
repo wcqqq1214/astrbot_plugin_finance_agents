@@ -63,3 +63,18 @@ async def fetch_indicators(ticker: str) -> dict[str, Any]:
     """Return a technical indicators snapshot for ``ticker``."""
 
     return await asyncio.to_thread(_fetch_indicators_sync, ticker)
+
+
+async def fetch_first_available(candidates: list[str]) -> dict[str, Any]:
+    """Fetch indicators from ``candidates`` in order, returning the first hit."""
+
+    last_error = ""
+    for symbol in candidates:
+        result = await fetch_indicators(symbol)
+        if "error" not in result:
+            return result
+        last_error = result["error"]
+    return {
+        "ticker": candidates[0] if candidates else "",
+        "error": f"None of {', '.join(candidates)} returned data: {last_error}",
+    }

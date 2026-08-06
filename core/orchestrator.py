@@ -22,6 +22,7 @@ from . import prompts
 from .formatting import format_news_block, format_quant_block, format_social_block
 from .llm import LLMAdapter, create_llm
 from .parsing import extract_json_object
+from .tickers import resolve_ticker
 from .types import (
     AnalysisResult,
     CIOVerdict,
@@ -41,15 +42,6 @@ def _str(value: Any) -> str:
 
 def _bias(value: Any, default: str = "neutral") -> str:
     return value if value in BIAS_VALUES else default
-
-
-def _normalize_ticker(raw: str) -> str:
-    text = (raw or "").strip().upper().strip("$")
-    for token in text.split():
-        cleaned = token.strip(",.;:()。，；：（）")
-        if cleaned.isalpha():
-            return cleaned
-    return text
 
 
 def _tavily_key(context: Any, umo: str) -> str | None:
@@ -96,8 +88,10 @@ def _fallback_summary(trend: str, indicators: dict[str, Any]) -> str:
 # --- research agents ---
 
 
-async def quant_agent(llm: LLMAdapter, ticker: str) -> QuantReport:
-    indicators = await market_tool.fetch_indicators(ticker)
+async def quant_agent(
+    llm: LLMAdapter, ticker: str, candidates: list[str]
+) -> QuantReport:
+    indicators = await market_tool.fetch_first_available(candidates)
     if "error" in indicators:
         return {
             "asset": ticker,
@@ -136,11 +130,12 @@ async def news_agent(
     ticker: str,
     api_key: str,
     *,
+    query: str,
     days: int,
     max_results: int,
 ) -> NewsReport:
     articles = await news_tool.search_news(
-        api_key, ticker, days=days, max_results=max_results
+        api_key, query, days=days, max_results=max_results
     )
     if not articles:
         return {
@@ -178,11 +173,12 @@ async def social_agent(
     ticker: str,
     api_key: str,
     *,
+    query: str,
     max_results: int,
     days_back: int,
 ) -> SocialReport:
     posts = await x_tool.search_x_posts(
-        api_key, ticker, max_results=max_results, days_back=days_back
+        api_key, query, max_results=max_results, days_back=days_back
     )
     if not posts:
         return {
@@ -266,7 +262,8 @@ async def run_analysis(
     *,
     on_progress: ProgressCallback | None = None,
 ) -> AnalysisResult:
-    ticker = _normalize_ticker(ticker_raw)
+    spec = resolve_ticker(ticker_raw, config)
+    ticker = spec.display
     llm = create_llm(context, umo)
     api_key = _tavily_key(context, umo)
     timeout = int(config.get("agent_timeout", 90) or 90)
@@ -307,7 +304,7 @@ async def run_analysis(
             "quant",
             "📊 量化技术面分析中…",
             "✅ 量化技术面分析完成",
-            quant_agent(llm, ticker),
+            quant_agent(llm, ticker, list(spec.candidates)),
         )
     ]
     if api_key:
@@ -320,6 +317,7 @@ async def run_analysis(
                     llm,
                     ticker,
                     api_key,
+                    query=spec.search_query,
                     days=news_days,
                     max_results=max_results,
                 ),
@@ -335,6 +333,7 @@ async def run_analysis(
                         llm,
                         ticker,
                         api_key,
+                        query=spec.search_query,
                         max_results=max_results,
                         days_back=x_search_days,
                     ),
