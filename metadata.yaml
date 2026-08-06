@@ -1,0 +1,24 @@
+name: astrbot_plugin_agents # 插件唯一识别名，以 astrbot_plugin_ 前缀开头
+display_name: Finance Agents # 用于展示的名字，方便人类阅读（需要版本 >= v4.5.0）
+short_desc: 多智能体金融分析：量化技术面 + 新闻情绪 + X 社交情绪，CIO 综合研判 # 紧凑 UI 使用的短描述（Optional）
+desc: |
+  基于 q-agents 的多智能体金融分析插件。对任意股票/加密货币标的，并行运行三个研究智能体：
+  - 量化智能体：yfinance 实时行情与技术指标（SMA/MACD/布林带/支撑阻力）
+  - 新闻智能体：Tavily 聚合近期新闻并做情绪倾向分析
+  - 社交智能体：Tavily 抓取 X (Twitter) 上的相关讨论与情绪
+  最后由 CIO 智能体先分别构建最强多头/空头论据，再调和给出综合研判与风险提示。
+  复用用户在 AstrBot WebUI 中配置的 LLM 提供商与 Tavily Key，插件无需额外配置密钥。
+version: 1.0.0 # 插件版本号。格式：1.1.1 或者 1.1
+author: wcqqq1214 # 作者
+repo: https://github.com/wcqqq1214/astrbot_plugin_agents # 插件的仓库地址
+tags: # 标签列表，用于插件市场分类和搜索（Optional）
+  - 金融
+  - 股票
+  - 多智能体
+  - 分析
+support_platforms: # 声明支持的平台适配器（Optional）
+  - aiocqhttp
+  - qq_official
+  - telegram
+  - discord
+astrbot_version: ">=4.26,<5" # 声明要求的 AstrBot 版本范围（Optional）

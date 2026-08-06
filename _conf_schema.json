@@ -1,0 +1,38 @@
+{
+  "news_days": {
+    "description": "新闻检索的时间窗口（天）",
+    "type": "int",
+    "default": 7,
+    "hint": "Tavily topic=news 检索近 N 天的新闻"
+  },
+  "x_search_enabled": {
+    "description": "启用 X (Twitter) 社交情绪分析",
+    "type": "bool",
+    "default": true,
+    "hint": "关闭后 Social 智能体将跳过 X 检索"
+  },
+  "x_search_days": {
+    "description": "X 帖子检索的时间窗口（天）",
+    "type": "int",
+    "default": 7,
+    "hint": "只采信近 N 天的 X 帖子，避免旧帖干扰"
+  },
+  "max_results": {
+    "description": "每次检索最多返回的结果数",
+    "type": "int",
+    "default": 8,
+    "hint": "新闻与 X 检索各自的最大结果数，范围 5-20"
+  },
+  "agent_timeout": {
+    "description": "单个智能体执行超时（秒）",
+    "type": "int",
+    "default": 90,
+    "hint": "超时的智能体将返回部分结果，不阻塞整体流程"
+  },
+  "show_sources": {
+    "description": "最终报告中附带数据来源链接",
+    "type": "bool",
+    "default": true,
+    "hint": "附带新闻与 X 帖子的原始链接，便于核实"
+  }
+}
