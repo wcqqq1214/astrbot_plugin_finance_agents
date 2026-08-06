@@ -1,4 +1,4 @@
-name: astrbot_plugin_agents # 插件唯一识别名，以 astrbot_plugin_ 前缀开头
+name: astrbot_plugin_finance_agents # 插件唯一识别名，以 astrbot_plugin_ 前缀开头
 display_name: Finance Agents # 用于展示的名字，方便人类阅读（需要版本 >= v4.5.0）
 short_desc: 多智能体金融分析：量化技术面 + 新闻情绪 + X 社交情绪，CIO 综合研判 # 紧凑 UI 使用的短描述（Optional）
 desc: |
@@ -10,7 +10,7 @@ desc: |
   复用用户在 AstrBot WebUI 中配置的 LLM 提供商与 Tavily Key，插件无需额外配置密钥。
 version: 1.0.0 # 插件版本号。格式：1.1.1 或者 1.1
 author: wcqqq1214 # 作者
-repo: https://github.com/wcqqq1214/astrbot_plugin_agents # 插件的仓库地址
+repo: https://github.com/wcqqq1214/astrbot_plugin_finance_agents # 插件的仓库地址
 tags: # 标签列表，用于插件市场分类和搜索（Optional）
   - 金融
   - 股票

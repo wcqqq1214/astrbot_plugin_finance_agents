@@ -46,7 +46,8 @@ SOCIAL_SYSTEM = (
     '- "sentiment": one of "bullish", "bearish", "neutral"\n'
     '- "signal_available": boolean\n'
     '- "summary": 1-2 sentences on the dominant retail view and its tone\n'
-    '- "keywords": a list of the most frequent cashtags/terms in the posts\n'
+    '- "keywords": a list of the most frequent cashtags/hashtags/terms in the '
+    "posts\n"
     "Output ONLY JSON."
 )
 

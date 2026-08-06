@@ -125,7 +125,7 @@ wheels = [
 ]
 
 [[package]]
-name = "astrbot-plugin-agents"
+name = "astrbot-plugin-finance-agents"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [

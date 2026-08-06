@@ -31,7 +31,7 @@ _HELP_TEXT = (
 
 
 @register(
-    "astrbot_plugin_agents",
+    "astrbot_plugin_finance_agents",
     "wcqqq1214",
     "并行 Quant/News/Social 研究 + CIO 综合研判的多智能体金融分析",
     "1.0.0",
@@ -52,9 +52,7 @@ class FinanceAgentsPlugin(Star):
         ticker = parts[0].strip() if parts else ""
         question = parts[1].strip() if len(parts) > 1 else ""
         if not ticker:
-            yield event.plain_result(
-                "用法：/analyze <代码> [问题]，例如 /analyze AAPL"
-            )
+            yield event.plain_result("用法：/analyze <代码> [问题]，例如 /analyze AAPL")
             return
 
         umo = event.unified_msg_origin

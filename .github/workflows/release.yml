@@ -71,7 +71,7 @@ jobs:
         run: |
           VERSION="${{ needs.check-version.outputs.new_version }}"
           mkdir -p dist
-          git ls-files | grep -v '^\.github/' | zip -@ "dist/astrbot_plugin_agents-${VERSION}.zip"
+          git ls-files | grep -v '^\.github/' | zip -@ "dist/astrbot_plugin_finance_agents-${VERSION}.zip"
 
       - name: Generate release notes
         id: notes
