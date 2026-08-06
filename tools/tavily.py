@@ -1,9 +1,8 @@
 """Minimal Tavily search client.
 
-Reads the same API keys the user configures for AstrBot's built-in web search
-(``provider_settings.websearch_tavily_key``), so the plugin needs no extra key
-setup. ``include_domains`` is supported directly, which the built-in tool does
-not expose — this is how we can pull X (Twitter) posts.
+The API key comes from the plugin config (``tavily_api_key``). ``include_domains``
+is supported directly, which AstrBot's built-in web search tool does not expose —
+this is how we can pull X (Twitter) posts.
 """
 
 from __future__ import annotations

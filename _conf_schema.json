@@ -1,4 +1,10 @@
 {
+  "tavily_api_key": {
+    "description": "Tavily API Key（用于新闻与 X 帖子检索）",
+    "type": "string",
+    "default": "",
+    "hint": "在 https://tavily.com 申请。留空则跳过新闻与 X 分析"
+  },
   "crypto_name_map": {
     "description": "加密货币代码 → 名称映射（用于新闻/X 检索）",
     "type": "dict",

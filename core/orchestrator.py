@@ -44,17 +44,6 @@ def _bias(value: Any, default: str = "neutral") -> str:
     return value if value in BIAS_VALUES else default
 
 
-def _tavily_key(context: Any, umo: str) -> str | None:
-    cfg = context.get_config(umo=umo)
-    provider_settings = cfg.get("provider_settings") or {}
-    keys = provider_settings.get("websearch_tavily_key") or []
-    if isinstance(keys, str):
-        return keys or None
-    if isinstance(keys, list) and keys:
-        return keys[0] or None
-    return None
-
-
 # --- deterministic fallbacks (used when the LLM output cannot be parsed) ---
 
 
@@ -265,7 +254,7 @@ async def run_analysis(
     spec = resolve_ticker(ticker_raw, config)
     ticker = spec.display
     llm = create_llm(context, umo)
-    api_key = _tavily_key(context, umo)
+    api_key = _str(config.get("tavily_api_key")) or None
     timeout = int(config.get("agent_timeout", 90) or 90)
     news_days = int(config.get("news_days", 7) or 7)
     max_results = int(config.get("max_results", 8) or 8)
@@ -345,7 +334,9 @@ async def run_analysis(
     else:
         if on_progress is not None:
             await on_progress(
-                "news", "skipped", "⚠️ 未配置 Tavily Key，跳过新闻与 X 分析"
+                "news",
+                "skipped",
+                "⚠️ 未配置 Tavily Key，跳过新闻与 X 分析（请在插件配置中填写 tavily_api_key）",
             )
 
     quant, news, social = await asyncio.gather(*tasks)

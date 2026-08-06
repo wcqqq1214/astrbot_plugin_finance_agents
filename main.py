@@ -3,7 +3,7 @@
 A parallel Quant / News / X-social research pipeline (native asyncio) followed
 by a single CIO call that folds the three reports into a bull/bear/verdict.
 Research data: yfinance for market indicators, Tavily for news and X posts
-(reusing the AstrBot-configured Tavily key, so no extra key setup).
+(configure the Tavily key in the plugin config).
 
 Data is for informational purposes only and is not financial advice.
 """
