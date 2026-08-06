@@ -60,14 +60,6 @@ AstrBot 多智能体金融分析插件。对一个标的并行运行三个研究
 - **X 抓取**：`include_domains=["x.com"]` 直调 Tavily。Tavily 的 `start_date` 对 X 检索不可靠，因此社交智能体的提示词要求只采信近 7 天帖子（帖子文本内嵌时间戳），并有 `signal_available` / `coverage_status` 兜底规则。
 - **容错**：单路失败/超时不影响整体，CIO 会拿到标记"不可用"的子报告并据此调整判断；LLM 输出解析失败时有确定性兜底。
 
-## 开发
-
-```bash
-uv sync            # 安装依赖
-ruff format .      # 格式化
-ruff check .       # 静态检查
-```
-
 ## 参考项目
 
 本插件的多智能体架构参考并受以下开源项目启发：
@@ -75,6 +67,6 @@ ruff check .       # 静态检查
 - [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents)
 - [owengetinfo-design/PokieTicker](https://github.com/owengetinfo-design/PokieTicker)
 
-## License
+## 许可证
 
-AGPL-3.0-or-later
+[AGPL-3.0](LICENSE)
