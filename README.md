@@ -68,6 +68,13 @@ ruff format .      # 格式化
 ruff check .       # 静态检查
 ```
 
+## 参考项目
+
+本插件的多智能体架构参考并受以下开源项目启发：
+
+- [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents)
+- [owengetinfo-design/PokieTicker](https://github.com/owengetinfo-design/PokieTicker)
+
 ## License
 
 AGPL-3.0-or-later
