@@ -1,9 +1,10 @@
-"""Market data via Binance (crypto) and yfinance (stocks).
+"""Market data via Binance (crypto) and Twelve Data / yfinance (stocks).
 
 Crypto daily OHLCV comes from Binance's public klines endpoint: no API key,
-and far less rate-limited than Yahoo. Stocks keep using yfinance, which is
-synchronous and network-bound, so every call is wrapped in ``asyncio.to_thread``
-to keep the plugin's event loop responsive.
+and far less rate-limited than Yahoo. Stocks prefer Twelve Data (a free API key
+configures it; much more rate-limit tolerant than Yahoo) and fall back to
+yfinance, which is synchronous and network-bound, so every call is wrapped in
+``asyncio.to_thread`` to keep the plugin's event loop responsive.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ import pandas as pd
 import yfinance as yf
 
 _BINANCE_KLINE_URL = "https://api.binance.com/api/v3/klines"
+_TWELVE_DATA_URL = "https://api.twelvedata.com/time_series"
 _KLINE_LIMIT = 95  # ~3 months of daily candles
 
 
@@ -85,6 +87,71 @@ async def _fetch_binance_ohlcv(symbol: str) -> pd.DataFrame | None:
     return df.set_index("ts").sort_index()
 
 
+def _twelve_data_to_df(payload: Any) -> pd.DataFrame | None:
+    """Build an OHLCV DataFrame from a Twelve Data ``time_series`` payload.
+
+    Returns None when the payload carries an error or no usable rows. Twelve
+    Data returns candles newest-first, so the result is sorted ascending to
+    match the other providers.
+    """
+
+    if not isinstance(payload, dict) or payload.get("status") == "error":
+        return None
+    values = payload.get("values")
+    if not isinstance(values, list):
+        return None
+    rows = []
+    for item in values:
+        if not isinstance(item, dict) or not item.get("datetime"):
+            continue
+        try:
+            rows.append(
+                (
+                    item["datetime"],
+                    float(item["open"]),
+                    float(item["high"]),
+                    float(item["low"]),
+                    float(item["close"]),
+                    float(item.get("volume") or 0),
+                )
+            )
+        except (KeyError, TypeError, ValueError):
+            continue
+    if not rows:
+        return None
+    df = pd.DataFrame(rows, columns=["ts", "Open", "High", "Low", "Close", "Volume"])
+    df["ts"] = pd.to_datetime(df["ts"])
+    return df.set_index("ts").sort_index()
+
+
+async def _fetch_twelve_data_ohlcv(symbol: str, api_key: str) -> pd.DataFrame | None:
+    """Fetch daily OHLCV for ``symbol`` from Twelve Data.
+
+    Returns a DataFrame indexed by date with Open/High/Low/Close/Volume columns,
+    or None when the request fails (network error, bad key, rate limit, or no
+    data for the symbol).
+    """
+
+    params = {
+        "symbol": symbol,
+        "interval": "1day",
+        "outputsize": str(_KLINE_LIMIT),
+        "apikey": api_key,
+    }
+    timeout = aiohttp.ClientTimeout(total=15)
+    try:
+        async with (
+            aiohttp.ClientSession(trust_env=True) as session,
+            session.get(_TWELVE_DATA_URL, params=params, timeout=timeout) as resp,
+        ):
+            if resp.status != 200:
+                return None
+            payload = await resp.json()
+    except (TimeoutError, aiohttp.ClientError):
+        return None
+    return _twelve_data_to_df(payload)
+
+
 def _fetch_indicators_sync(ticker: str) -> dict[str, Any]:
     try:
         hist = yf.Ticker(ticker).history(period="3mo", interval="1d", auto_adjust=True)
@@ -137,3 +204,26 @@ async def fetch_crypto_indicators(base: str) -> dict[str, Any]:
     out["ticker"] = f"{base}-USDT"
     out["provider"] = "binance"
     return out
+
+
+async def fetch_stock_indicators(
+    symbol: str, twelve_data_key: str | None
+) -> dict[str, Any]:
+    """Return a technical indicators snapshot for stock ``symbol``.
+
+    Twelve Data is the primary source when an API key is configured (it is far
+    more rate-limit tolerant than Yahoo); yfinance is the fallback. With no key,
+    yfinance is used directly.
+    """
+
+    if twelve_data_key:
+        df = await _fetch_twelve_data_ohlcv(symbol, twelve_data_key)
+        if df is not None and not df.empty:
+            out = _compute_indicators(df)
+            out["ticker"] = symbol
+            out["provider"] = "twelve_data"
+            return out
+    result = await fetch_first_available([symbol])
+    if "error" not in result:
+        result["provider"] = "yahoo"
+    return result

@@ -5,6 +5,12 @@
     "default": "",
     "hint": "在 https://tavily.com 申请。留空则跳过新闻与 X 分析"
   },
+  "twelve_data_api_key": {
+    "description": "Twelve Data API Key（用于股票行情，优先级高于 yfinance）",
+    "type": "string",
+    "default": "",
+    "hint": "在 https://twelvedata.com 注册免费 Key。配置后股票行情走 Twelve Data（限流宽松），失败时回退 yfinance；留空则股票行情直接走 yfinance"
+  },
   "crypto_name_map": {
     "description": "加密货币代码 → 名称映射（用于新闻/X 检索）",
     "type": "dict",

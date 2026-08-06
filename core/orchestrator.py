@@ -275,6 +275,7 @@ async def run_analysis(
     llm = create_llm(context, umo)
     lang = _detect_lang(query)
     api_key = _str(config.get("tavily_api_key")) or None
+    twelve_data_key = _str(config.get("twelve_data_api_key")) or None
     timeout = int(config.get("agent_timeout", 90) or 90)
     news_days = int(config.get("news_days", 7) or 7)
     max_results = int(config.get("max_results", 8) or 8)
@@ -312,7 +313,7 @@ async def run_analysis(
     quant_fetch = (
         market_tool.fetch_crypto_indicators(spec.display)
         if spec.is_crypto
-        else market_tool.fetch_first_available(list(spec.candidates))
+        else market_tool.fetch_stock_indicators(spec.display, twelve_data_key)
     )
     tasks: list[Awaitable[Any]] = [
         _task(

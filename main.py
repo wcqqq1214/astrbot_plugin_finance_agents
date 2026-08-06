@@ -2,8 +2,9 @@
 
 A parallel Quant / News / X-social research pipeline (native asyncio) followed
 by a single CIO call that folds the three reports into a bull/bear/verdict.
-Research data: Binance (crypto) / yfinance (stocks) for market indicators, Tavily
-for news and X posts (configure the Tavily key in the plugin config).
+Research data: Binance (crypto) and Twelve Data / yfinance (stocks) for market
+indicators, Tavily for news and X posts (configure the Tavily key in the plugin
+config).
 
 Data is for informational purposes only and is not financial advice.
 """
