@@ -102,7 +102,7 @@ def cio_system() -> str:
         "figures or claims from X posts are unverified; do not repeat them as "
         "facts.\n"
         "Language rule: answer in the SAME language as the user's question. If the "
-        "question is in Chinese, write the three text fields in Chinese; if English, "
+        "question is in Chinese, write all text fields in Chinese; if English, "
         "in English.\n"
         "Output a strict JSON object with exactly these keys:\n"
         '- "bull_case": the strongest bull argument, with evidence\n'
@@ -115,5 +115,9 @@ def cio_system() -> str:
         "value), avoid unexplained jargon, and read like a human analyst "
         "talking to a friend rather than an internal research note. Do not "
         "output any chain-of-thought or internal reasoning.\n"
+        '- "final_summary": a concise 2-4 sentence summary in the same language '
+        "that contrasts the bull and bear cases and states the resulting "
+        'trading direction (e.g., "lean long", "lean short", "stay on the '
+        'sidelines"), written for a general reader\n'
         "Output ONLY JSON."
     )

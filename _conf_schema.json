@@ -50,7 +50,7 @@
   "show_sources": {
     "description": "最终报告中附带数据来源链接",
     "type": "bool",
-    "default": true,
-    "hint": "附带新闻与 X 帖子的原始链接，便于核实"
+    "default": false,
+    "hint": "默认关闭；打开后附带新闻与 X 帖子的原始链接，便于核实"
   }
 }

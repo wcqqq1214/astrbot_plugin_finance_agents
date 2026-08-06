@@ -242,11 +242,15 @@ async def cio_agent(
     final_decision = _str(obj.get("final_decision"))
     if not final_decision:
         final_decision = f"综合结论：\n{bull_case}\n\n主要风险：\n{bear_case}"
+    final_summary = _str(obj.get("final_summary"))
+    if not final_summary:
+        final_summary = "综合多空双方后方向尚不明确，建议观望。"
     return {
         "asset": ticker,
         "bull_case": bull_case,
         "bear_case": bear_case,
         "final_decision": final_decision,
+        "final_summary": final_summary,
     }
 
 

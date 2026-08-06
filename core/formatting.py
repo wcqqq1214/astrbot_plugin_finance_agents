@@ -97,7 +97,7 @@ def format_social_block(social: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def format_final_message(result: AnalysisResult, *, show_sources: bool = True) -> str:
+def format_final_message(result: AnalysisResult, *, show_sources: bool = False) -> str:
     """Render the user-facing plain-text summary of the whole analysis."""
 
     asset = result["asset"]
@@ -131,6 +131,10 @@ def format_final_message(result: AnalysisResult, *, show_sources: bool = True) -
             f"· X 社交情绪：{social.get('sentiment', 'neutral')} — "
             f"{social.get('summary') or 'N/A'}"
         )
+
+    final_summary = (verdict.get("final_summary") or "").strip()
+    if final_summary:
+        lines.extend(["", "【总结】", final_summary])
 
     if show_sources:
         sources_lines: list[str] = []

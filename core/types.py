@@ -36,6 +36,7 @@ class CIOVerdict(TypedDict):
     bull_case: str
     bear_case: str
     final_decision: str
+    final_summary: str
 
 
 class AnalysisResult(TypedDict):

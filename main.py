@@ -101,5 +101,5 @@ class FinanceAgentsPlugin(Star):
             await _push(f"⚠️ 分析异常：{type(exc).__name__}")
             return
 
-        show_sources = bool(self.config.get("show_sources", True))
+        show_sources = bool(self.config.get("show_sources", False))
         await _push(format_final_message(result, show_sources=show_sources))
