@@ -17,8 +17,5 @@ tags: # 标签列表，用于插件市场分类和搜索（Optional）
   - 多智能体
   - 分析
 support_platforms: # 声明支持的平台适配器（Optional）
-  - aiocqhttp
   - qq_official
-  - telegram
-  - discord
 astrbot_version: ">=4.26,<5" # 声明要求的 AstrBot 版本范围（Optional）
