@@ -97,6 +97,62 @@ def format_social_block(social: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def format_prediction_block(prediction: dict[str, Any]) -> str:
+    """Render the prediction-market report as a prompt block for the CIO."""
+
+    coverage_status = prediction.get("coverage_status")
+    signal_available = prediction.get("signal_available")
+    if coverage_status not in ("available", "unavailable"):
+        coverage_status = (
+            "available" if signal_available is not False else "unavailable"
+        )
+    interpretation = (
+        "Exclude from directional judgment; treat as missing context."
+        if coverage_status == "unavailable"
+        else "Use as crowd-priced directional reference; not a precise forecast."
+    )
+    lines = [
+        "Prediction market summary:",
+        f"- asset: {prediction.get('asset', 'UNKNOWN')}",
+        f"- bias: {prediction.get('bias', 'neutral')}",
+        f"- signal_available: {signal_available}",
+        f"- coverage_status: {coverage_status}",
+        f"- summary: {prediction.get('summary') or 'N/A'}",
+        f"- interpretation: {interpretation}",
+    ]
+    key_points = (
+        prediction.get("key_points", [])
+        if isinstance(prediction.get("key_points"), list)
+        else []
+    )
+    if key_points:
+        lines.extend(["", "Key prediction-market points:"])
+        lines.extend(f"- {point}" for point in key_points[:5])
+    markets = (
+        prediction.get("markets", [])
+        if isinstance(prediction.get("markets"), list)
+        else []
+    )
+    if markets:
+        lines.extend(["", "High-volume price levels:"])
+        for market in markets[:8]:
+            if not isinstance(market, dict):
+                continue
+            prices = market.get("prices")
+            price_text = (
+                ", ".join(f"{float(p) * 100:.0f}%" for p in prices)
+                if isinstance(prices, list)
+                else "N/A"
+            )
+            lines.append(
+                "- "
+                f"{market.get('question') or 'Untitled'} | "
+                f"prob={price_text} | "
+                f"vol24=${market.get('volume24hr', 0):,.0f}"
+            )
+    return "\n".join(lines)
+
+
 def format_final_message(result: AnalysisResult, *, show_sources: bool = False) -> str:
     """Render the user-facing plain-text summary of the whole analysis."""
 
@@ -105,6 +161,7 @@ def format_final_message(result: AnalysisResult, *, show_sources: bool = False) 
     quant = result["quant"]
     news = result["news"]
     social = result["social"]
+    prediction = result["prediction"]
 
     lines = [f"📊 {asset} 多智能体综合研判", "", "【综合结论】"]
     final_decision = (verdict.get("final_decision") or "").strip()
@@ -130,6 +187,13 @@ def format_final_message(result: AnalysisResult, *, show_sources: bool = False) 
         lines.append(
             f"· X 社交情绪：{social.get('sentiment', 'neutral')} — "
             f"{social.get('summary') or 'N/A'}"
+        )
+    if prediction.get("coverage_status") == "unavailable":
+        lines.append("· 预测市场（Polymarket）：不可用（未找到高成交相关市场）")
+    else:
+        lines.append(
+            f"· 预测市场（Polymarket）：{prediction.get('bias', 'neutral')} — "
+            f"{prediction.get('summary') or 'N/A'}"
         )
 
     final_summary = (verdict.get("final_summary") or "").strip()

@@ -1,11 +1,11 @@
 # Finance Agents
 
-AstrBot 多智能体金融分析插件。对一个标的并行运行三个研究智能体（量化技术面 / 宏观新闻情绪 / X 社交情绪），再由 CIO 智能体折叠多空论据、给出综合研判。
+AstrBot 多智能体金融分析插件。对一个标的并行运行四个研究智能体（量化技术面 / 宏观新闻情绪 / X 社交情绪 / Polymarket 预测市场信号），再由 CIO 智能体折叠多空论据、给出综合研判。
 
-支持**股票与加密货币**：加密行情来自 Binance 公共行情（免 Key、限流宽松）；股票行情默认走 Twelve Data（限流宽松，需配置免费 API Key），未配置 Key 时回退 yfinance；新闻与 X 帖子来自 Tavily（需在插件配置中填写 Tavily API Key）。
+支持**股票与加密货币**：加密行情来自 Binance 公共行情（免 Key、限流宽松）；股票行情默认走 Twelve Data（限流宽松，需配置免费 API Key），未配置 Key 时回退 yfinance；新闻与 X 帖子来自 Tavily（需在插件配置中填写 Tavily API Key）；预测市场信号来自 Polymarket 公共 API（免 Key、无需配置，仅加密货币适用）。
 
 - 股票：`/analyze AAPL`、`/analyze NVDA` 等（配置 `twelve_data_api_key` 后走 Twelve Data，否则走 yfinance）
-- 加密货币：`/analyze BTC`、`/analyze ETH` 等，直接输币种代码即可。行情只走 Binance 的 `BTCUSDT` 交易对；新闻与 X 检索使用币种全名（如 `Bitcoin BTC`）；常见币种（BTC/ETH/SOL/XRP/DOGE/ADA/BNB/AVAX/LTC/DOT/LINK）已内置，也可用 `crypto_name_map` 配置自定义映射。兼容输入 `BTC-USD`/`BTC-USDT`。
+- 加密货币：`/analyze BTC`、`/analyze ETH` 等，直接输币种代码即可。行情只走 Binance 的 `BTCUSDT` 交易对；新闻与 X 检索使用币种全名（如 `Bitcoin BTC`）；常见币种（BTC/ETH/SOL/XRP/DOGE/ADA/BNB/AVAX/LTC/DOT/LINK）已内置，也可用 `crypto_name_map` 配置自定义映射。兼容输入 `BTC-USD`/`BTC-USDT`。加密货币的 Polymarket 预测市场信号走事件级过滤（事件 24h 成交额 ≥ $10 万），只采信高参与度市场的概率阶梯。
 
 > 股票代码需用 Twelve Data / yfinance 可识别的格式；数据仅用于信息参考，不构成任何投资建议。
 
@@ -23,7 +23,7 @@ AstrBot 多智能体金融分析插件。对一个标的并行运行三个研究
 
 - 综合结论：CIO 调和多空后的最终研判
 - 最强多头论据 / 最强空头论据
-- 各智能体摘要：量化技术面、新闻情绪、X 社交情绪
+- 各智能体摘要：量化技术面、新闻情绪、X 社交情绪、预测市场信号
 - 总结：对比多空双方，给出最终交易方向
 - 数据来源：新闻与 X 帖子的原始链接（默认关闭，可用 `show_sources` 打开）
 
@@ -46,10 +46,11 @@ AstrBot 多智能体金融分析插件。对一个标的并行运行三个研究
 ```
 /analyze AAPL
    └─ run_analysis（原生 asyncio，无 langgraph）
-        ├─ asyncio.gather 并行三路
-        │    ├─ Quant Agent   —— Binance/Twelve Data/yfinance 取指标 → LLM 判定 trend/levels/summary
-        │    ├─ News Agent    —— Tavily news → LLM 判定 bias/key_points
-        │    └─ Social Agent  —— Tavily x.com → LLM 判定 sentiment/signal_available
+        ├─ asyncio.gather 并行四路
+        │    ├─ Quant Agent       —— Binance/Twelve Data/yfinance 取指标 → LLM 判定 trend/levels/summary
+        │    ├─ Prediction Agent  —— Polymarket Gamma API 事件级过滤 → LLM 解读概率阶梯 → bias/信号
+        │    ├─ News Agent        —— Tavily news → LLM 判定 bias/key_points
+        │    └─ Social Agent      —— Tavily x.com → LLM 判定 sentiment/signal_available
         └─ CIO Agent（单次调用，2a 折叠）
              ├─ 先构造 bull_case / bear_case
              └─ 再调和为 final_decision
@@ -57,9 +58,10 @@ AstrBot 多智能体金融分析插件。对一个标的并行运行三个研究
 
 要点：
 
-- **确定性取数 + 单次 LLM 总结**：三个研究智能体都先取真实数据，再让 LLM 做一次结构化总结（输出严格 JSON），没有 tool-calling 循环，稳定且延迟可控。
+- **确定性取数 + 单次 LLM 总结**：四个研究智能体都先取真实数据，再让 LLM 做一次结构化总结（输出严格 JSON），没有 tool-calling 循环，稳定且延迟可控。
 - **标的解析**（`core/tickers.py`）：裸 `BTC`/`ETH` 识别为加密货币，行情只走 Binance 的 `BTCUSDT`，新闻/X 用全名（如 `Bitcoin BTC`）检索；非币种代码（如 `AAPL`）走 Twelve Data（配置了 `twelve_data_api_key` 时），失败或未配置则用 yfinance。
 - **技术指标**：SMA20、MACD(12,26,9)、布林带(20,2)、区间涨跌幅，全部在 `tools/market.py` 里用 pandas 计算。
+- **Polymarket 信号**（`tools/polymarket.py`）：抓取 `events?tag_slug=crypto`，按**事件级** 24h 成交额 ≥ $10 万硬编码过滤（不配配置项），事件内保留成交额最高的档位、丢弃 `vol24=0` 的档位，按币名匹配事件标题；低成交档位由 LLM 降权。免 API Key。
 - **X 抓取**：`include_domains=["x.com"]` 直调 Tavily。Tavily 的 `start_date` 对 X 检索不可靠，因此社交智能体的提示词要求只采信近 7 天帖子（帖子文本内嵌时间戳），并有 `signal_available` / `coverage_status` 兜底规则。
 - **容错**：单路失败/超时不影响整体，CIO 会拿到标记"不可用"的子报告并据此调整判断；LLM 输出解析失败时有确定性兜底。
 

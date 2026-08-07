@@ -1,9 +1,9 @@
 """Parallel multi-agent orchestration.
 
-Runs quant / news / social research in parallel (``asyncio.gather``), then a
-single CIO call folds the three reports into a bull/bear/verdict JSON (the "2a"
-variant). ``on_progress`` is invoked as each stage transitions so the Star can
-stream live progress to the chat.
+Runs quant / prediction-market / news / social research in parallel
+(``asyncio.gather``), then a single CIO call folds the four reports into a
+bull/bear/verdict JSON (the "2a" variant). ``on_progress`` is invoked as each
+stage transitions so the Star can stream live progress to the chat.
 """
 
 from __future__ import annotations
@@ -17,9 +17,15 @@ from astrbot.api import logger
 
 from ..tools import market as market_tool
 from ..tools import news as news_tool
+from ..tools import polymarket as polymarket_tool
 from ..tools import x as x_tool
 from . import prompts
-from .formatting import format_news_block, format_quant_block, format_social_block
+from .formatting import (
+    format_news_block,
+    format_prediction_block,
+    format_quant_block,
+    format_social_block,
+)
 from .llm import LLMAdapter, create_llm
 from .parsing import extract_json_object
 from .tickers import resolve_ticker
@@ -27,6 +33,7 @@ from .types import (
     AnalysisResult,
     CIOVerdict,
     NewsReport,
+    PredictionReport,
     QuantReport,
     SocialReport,
 )
@@ -220,6 +227,59 @@ async def social_agent(
     }
 
 
+async def prediction_agent(
+    llm: LLMAdapter,
+    ticker: str,
+    coin_query: str,
+    *,
+    lang: str,
+) -> PredictionReport:
+    events = await polymarket_tool.fetch_crypto_events(coin_query)
+    if not events:
+        return {
+            "asset": ticker,
+            "bias": "neutral",
+            "signal_available": False,
+            "coverage_status": "unavailable",
+            "key_points": ["未找到高成交的相关 Polymarket 预测市场。"],
+            "summary": "未找到高成交的相关 Polymarket 预测市场。",
+            "markets": [],
+        }
+    user_content = (
+        f"Asset: {ticker}\n\nPolymarket events and price levels (JSON):\n"
+        f"{json.dumps(events, ensure_ascii=False)}"
+    )
+    text = await llm.chat(prompts.prediction_system(lang), user_content)
+    try:
+        obj = extract_json_object(text)
+    except ValueError:
+        obj = {}
+    signal_available = bool(obj.get("signal_available", True))
+    key_points = [
+        item
+        for item in (obj.get("key_points") or [])
+        if isinstance(item, str) and item.strip()
+    ][:5]
+    if not key_points:
+        key_points = [f"找到 {len(events)} 个相关预测市场事件。"]
+    summary = _str(obj.get("summary"))
+    if not summary:
+        summary = (
+            "未找到足够的可用预测市场信号。"
+            if not signal_available
+            else f"找到 {len(events)} 个相关预测市场事件。"
+        )
+    return {
+        "asset": ticker,
+        "bias": _bias(obj.get("bias")),
+        "signal_available": signal_available,
+        "coverage_status": "available" if signal_available else "unavailable",
+        "key_points": key_points,
+        "summary": summary,
+        "markets": events,
+    }
+
+
 async def cio_agent(
     llm: LLMAdapter,
     ticker: str,
@@ -227,6 +287,7 @@ async def cio_agent(
     quant: QuantReport,
     news: NewsReport,
     social: SocialReport,
+    prediction: PredictionReport,
 ) -> CIOVerdict:
     block = "\n\n".join(
         [
@@ -234,6 +295,7 @@ async def cio_agent(
             format_quant_block(quant),
             format_news_block(news),
             format_social_block(social),
+            format_prediction_block(prediction),
         ]
     )
     text = await llm.chat(prompts.cio_system(), block)
@@ -315,46 +377,74 @@ async def run_analysis(
         if spec.is_crypto
         else market_tool.fetch_stock_indicators(spec.display, twelve_data_key)
     )
-    tasks: list[Awaitable[Any]] = [
-        _task(
+    tasks: list[tuple[str, Awaitable[Any]]] = [
+        (
             "quant",
-            "📊 量化技术面分析中…",
-            "✅ 量化技术面分析完成",
-            quant_agent(llm, ticker, quant_fetch, lang=lang),
+            _task(
+                "quant",
+                "📊 量化技术面分析中…",
+                "✅ 量化技术面分析完成",
+                quant_agent(llm, ticker, quant_fetch, lang=lang),
+            ),
         )
     ]
+    if spec.is_crypto:
+        tasks.append(
+            (
+                "prediction",
+                _task(
+                    "prediction",
+                    "🎯 Polymarket 预测市场信号分析中…",
+                    "✅ 预测市场信号分析完成",
+                    prediction_agent(llm, ticker, spec.search_query, lang=lang),
+                ),
+            )
+        )
+    else:
+        if on_progress is not None:
+            await on_progress(
+                "prediction",
+                "skipped",
+                "ℹ️ 非加密货币，跳过 Polymarket 预测市场分析",
+            )
     if api_key:
         tasks.append(
-            _task(
+            (
                 "news",
-                "📰 新闻情绪分析中…",
-                "✅ 新闻情绪分析完成",
-                news_agent(
-                    llm,
-                    ticker,
-                    api_key,
-                    query=spec.search_query,
-                    days=news_days,
-                    max_results=max_results,
-                    lang=lang,
+                _task(
+                    "news",
+                    "📰 新闻情绪分析中…",
+                    "✅ 新闻情绪分析完成",
+                    news_agent(
+                        llm,
+                        ticker,
+                        api_key,
+                        query=spec.search_query,
+                        days=news_days,
+                        max_results=max_results,
+                        lang=lang,
+                    ),
                 ),
             )
         )
         if x_search_enabled:
             tasks.append(
-                _task(
+                (
                     "social",
-                    "🐦 X 社交情绪分析中…",
-                    "✅ X 社交情绪分析完成",
-                    social_agent(
-                        llm,
-                        ticker,
-                        api_key,
-                        query=spec.search_query,
-                        max_results=max_results,
-                        days_back=x_search_days,
-                        lang=lang,
-                        min_posts=x_min_posts,
+                    _task(
+                        "social",
+                        "🐦 X 社交情绪分析中…",
+                        "✅ X 社交情绪分析完成",
+                        social_agent(
+                            llm,
+                            ticker,
+                            api_key,
+                            query=spec.search_query,
+                            max_results=max_results,
+                            days_back=x_search_days,
+                            lang=lang,
+                            min_posts=x_min_posts,
+                        ),
                     ),
                 )
             )
@@ -369,10 +459,12 @@ async def run_analysis(
                 "⚠️ 未配置 Tavily Key，跳过新闻与 X 分析（请在插件配置中填写 tavily_api_key）",
             )
 
-    results = await asyncio.gather(*tasks)
-    quant = results[0] if len(results) > 0 else None
-    news = results[1] if len(results) > 1 else None
-    social = results[2] if len(results) > 2 else None
+    results = await asyncio.gather(*(coro for _, coro in tasks))
+    by_label = dict(zip((label for label, _ in tasks), results, strict=True))
+    quant = by_label.get("quant")
+    news = by_label.get("news")
+    social = by_label.get("social")
+    prediction = by_label.get("prediction")
 
     if quant is None:
         quant = {
@@ -398,10 +490,20 @@ async def run_analysis(
             "summary": "X 社交分析不可用。",
             "posts": [],
         }
+    if prediction is None:
+        prediction = {
+            "asset": ticker,
+            "bias": "neutral",
+            "signal_available": False,
+            "coverage_status": "unavailable",
+            "key_points": ["预测市场分析不可用。"],
+            "summary": "预测市场分析不可用。",
+            "markets": [],
+        }
 
     if on_progress is not None:
         await on_progress("cio", "running", "🧠 CIO 综合研判中…")
-    verdict = await cio_agent(llm, ticker, query, quant, news, social)
+    verdict = await cio_agent(llm, ticker, query, quant, news, social, prediction)
     if on_progress is not None:
         await on_progress("cio", "done", "✅ CIO 综合研判完成")
 
@@ -411,5 +513,6 @@ async def run_analysis(
         "quant": quant,
         "news": news,
         "social": social,
+        "prediction": prediction,
         "verdict": verdict,
     }

@@ -24,10 +24,10 @@ from .core.orchestrator import run_analysis
 
 _HELP_TEXT = (
     "Finance Agents 多智能体金融分析\n"
-    "· /analyze <代码> [问题]   并行量化/新闻/X 三路研究，再由 CIO 综合研判\n"
+    "· /analyze <代码> [问题]   并行量化/新闻/X/预测市场四路研究，再由 CIO 综合研判\n"
     "例如：/analyze AAPL 我该现在买入吗？\n"
     "加密货币可直接用币种代码：/analyze BTC、/analyze ETH（行情走 Binance 交易对，"
-    "可用 crypto_name_map 配置映射）\n"
+    "可用 crypto_name_map 配置映射；预测市场信号走 Polymarket，仅加密货币适用）\n"
     "\n"
     "数据仅用于信息参考，不构成任何投资建议。"
 )

@@ -31,6 +31,16 @@ class SocialReport(TypedDict, total=False):
     posts: list[dict[str, Any]]
 
 
+class PredictionReport(TypedDict, total=False):
+    asset: str
+    bias: BiasLabel
+    signal_available: bool
+    coverage_status: Literal["available", "unavailable"]
+    key_points: list[str]
+    summary: str
+    markets: list[dict[str, Any]]
+
+
 class CIOVerdict(TypedDict):
     asset: str
     bull_case: str
@@ -45,6 +55,7 @@ class AnalysisResult(TypedDict):
     quant: QuantReport
     news: NewsReport
     social: SocialReport
+    prediction: PredictionReport
     verdict: CIOVerdict
 
 
