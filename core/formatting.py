@@ -181,16 +181,12 @@ def format_final_message(result: AnalysisResult, *, show_sources: bool = False) 
     news_bias = news.get("bias", "neutral")
     first_point = (news.get("key_points") or ["N/A"])[0]
     lines.append(f"· 新闻情绪：{news_bias} — {first_point}")
-    if social.get("coverage_status") == "unavailable":
-        lines.append("· X 社交情绪：不可用（未检索到足够近期帖子）")
-    else:
+    if social.get("coverage_status") != "unavailable":
         lines.append(
             f"· X 社交情绪：{social.get('sentiment', 'neutral')} — "
             f"{social.get('summary') or 'N/A'}"
         )
-    if prediction.get("coverage_status") == "unavailable":
-        lines.append("· 预测市场（Polymarket）：不可用（未找到高成交相关市场）")
-    else:
+    if prediction.get("coverage_status") != "unavailable":
         lines.append(
             f"· 预测市场（Polymarket）：{prediction.get('bias', 'neutral')} — "
             f"{prediction.get('summary') or 'N/A'}"
