@@ -11,6 +11,15 @@ def _as_dict(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
+def _coverage_status(item: dict[str, Any]) -> str:
+    """Normalize ``coverage_status`` from the report's ``signal_available`` flag."""
+    status = item.get("coverage_status")
+    signal_available = item.get("signal_available")
+    if status not in ("available", "unavailable"):
+        status = "available" if signal_available is not False else "unavailable"
+    return status
+
+
 def format_quant_block(quant: dict[str, Any]) -> str:
     """Render the quant report as a structured prompt block for the CIO."""
 
@@ -74,12 +83,8 @@ def format_news_block(news: dict[str, Any]) -> str:
 def format_social_block(social: dict[str, Any]) -> str:
     """Render the social report as a structured prompt block for the CIO."""
 
-    coverage_status = social.get("coverage_status")
+    coverage_status = _coverage_status(social)
     signal_available = social.get("signal_available")
-    if coverage_status not in ("available", "unavailable"):
-        coverage_status = (
-            "available" if signal_available is not False else "unavailable"
-        )
     interpretation = (
         "Exclude from retail sentiment judgment."
         if coverage_status == "unavailable"
@@ -100,12 +105,8 @@ def format_social_block(social: dict[str, Any]) -> str:
 def format_prediction_block(prediction: dict[str, Any]) -> str:
     """Render the prediction-market report as a prompt block for the CIO."""
 
-    coverage_status = prediction.get("coverage_status")
+    coverage_status = _coverage_status(prediction)
     signal_available = prediction.get("signal_available")
-    if coverage_status not in ("available", "unavailable"):
-        coverage_status = (
-            "available" if signal_available is not False else "unavailable"
-        )
     interpretation = (
         "Exclude from directional judgment; treat as missing context."
         if coverage_status == "unavailable"

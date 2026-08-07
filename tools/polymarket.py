@@ -122,7 +122,7 @@ async def fetch_crypto_events(coin_query: str) -> list[dict[str, Any]]:
             if resp.status != 200:
                 return []
             payload = await resp.json()
-    except (TimeoutError, aiohttp.ClientError):
+    except (TimeoutError, aiohttp.ClientError, json.JSONDecodeError):
         return []
     if not isinstance(payload, list):
         return []

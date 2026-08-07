@@ -87,6 +87,19 @@ def _fallback_summary(trend: str, indicators: dict[str, Any]) -> str:
     return "自动兜底结论：暂无行情数据。"
 
 
+def _fallback_prediction(ticker: str) -> dict[str, Any]:
+    """Unavailable prediction report, used when nothing is fetched or the task fails."""
+    return {
+        "asset": ticker,
+        "bias": "neutral",
+        "signal_available": False,
+        "coverage_status": "unavailable",
+        "key_points": ["未找到高成交的相关 Polymarket 预测市场。"],
+        "summary": "未找到高成交的相关 Polymarket 预测市场。",
+        "markets": [],
+    }
+
+
 # --- research agents ---
 
 
@@ -207,7 +220,9 @@ async def social_agent(
         obj = extract_json_object(text)
     except ValueError:
         obj = {}
-    signal_available = bool(obj.get("signal_available", True))
+        signal_available = False
+    else:
+        signal_available = bool(obj.get("signal_available", True))
     if len(posts) < min_posts:
         signal_available = False
     summary = _str(obj.get("summary"))
@@ -236,15 +251,7 @@ async def prediction_agent(
 ) -> PredictionReport:
     events = await polymarket_tool.fetch_crypto_events(coin_query)
     if not events:
-        return {
-            "asset": ticker,
-            "bias": "neutral",
-            "signal_available": False,
-            "coverage_status": "unavailable",
-            "key_points": ["未找到高成交的相关 Polymarket 预测市场。"],
-            "summary": "未找到高成交的相关 Polymarket 预测市场。",
-            "markets": [],
-        }
+        return _fallback_prediction(ticker)
     user_content = (
         f"Asset: {ticker}\n\nPolymarket events and price levels (JSON):\n"
         f"{json.dumps(events, ensure_ascii=False)}"
@@ -254,7 +261,9 @@ async def prediction_agent(
         obj = extract_json_object(text)
     except ValueError:
         obj = {}
-    signal_available = bool(obj.get("signal_available", True))
+        signal_available = False
+    else:
+        signal_available = bool(obj.get("signal_available", True))
     key_points = [
         item
         for item in (obj.get("key_points") or [])
@@ -491,15 +500,7 @@ async def run_analysis(
             "posts": [],
         }
     if prediction is None:
-        prediction = {
-            "asset": ticker,
-            "bias": "neutral",
-            "signal_available": False,
-            "coverage_status": "unavailable",
-            "key_points": ["预测市场分析不可用。"],
-            "summary": "预测市场分析不可用。",
-            "markets": [],
-        }
+        prediction = _fallback_prediction(ticker)
 
     if on_progress is not None:
         await on_progress("cio", "running", "🧠 CIO 综合研判中…")
