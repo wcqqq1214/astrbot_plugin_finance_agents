@@ -37,7 +37,7 @@ _HELP_TEXT = (
     "astrbot_plugin_finance_agents",
     "wcqqq1214",
     "并行 Quant/News/Social 研究 + CIO 综合研判的多智能体金融分析",
-    "1.0.0",
+    "1.0.1",
 )
 class FinanceAgentsPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig | None = None) -> None:

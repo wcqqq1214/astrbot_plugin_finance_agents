@@ -8,7 +8,7 @@ desc: |
   - 社交智能体：Tavily 抓取 X (Twitter) 上的相关讨论与情绪
   最后由 CIO 智能体先分别构建最强多头/空头论据，再调和给出综合研判与风险提示。
   复用用户在 AstrBot WebUI 中配置的 LLM 提供商；Tavily Key 请在插件配置中单独填写。
-version: 1.0.0 # 插件版本号。格式：1.1.1 或者 1.1
+version: 1.0.1 # 插件版本号。格式：1.1.1 或者 1.1
 author: wcqqq1214 # 作者
 repo: https://github.com/wcqqq1214/astrbot_plugin_finance_agents # 插件的仓库地址
 tags: # 标签列表，用于插件市场分类和搜索（Optional）

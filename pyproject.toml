@@ -1,6 +1,6 @@
 [project]
 name = "astrbot-plugin-finance-agents"
-version = "1.0.0"
+version = "1.0.1"
 description = "Multi-agent financial analysis for AstrBot: quant, news and X social sentiment with a folded CIO bull/bear verdict"
 readme = "README.md"
 license = { text = "AGPL-3.0-or-later" }
