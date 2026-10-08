@@ -45,7 +45,7 @@ class FinanceAgentsPlugin(Star):
         self.config = config if config is not None else AstrBotConfig()
         self._in_flight: dict[str, asyncio.Task] = {}
 
-    @filter.command("help")
+    @filter.command("finance_help")
     async def _help(self, event: AstrMessageEvent):
         return event.plain_result(_HELP_TEXT)
 
